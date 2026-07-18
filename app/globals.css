@@ -141,3 +141,20 @@ body :where(p,span,small,button,input,select,textarea,label,th,td,dt,dd,em,b,str
 .permission-preview { display:flex;flex-direction:column;gap:8px;background:#f7f9fc;border-radius:10px;padding:14px;color:#536278; }
 .permission-preview b { color:var(--ink);margin-bottom:2px; }
 @media (max-width:760px) { .user-table .table-wrap { display:block; }.user-table table { min-width:900px; } }
+
+/* 出庫與 FIFO */
+.outbound-line { display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:16px;align-items:center;padding:16px;border-bottom:1px solid var(--line); }
+.outbound-line:last-child { border-bottom:0; }
+.outbound-line>div span,.outbound-line>div b { display:block; }
+.outbound-line>div span { color:var(--muted);margin-bottom:5px; }
+.approval-section>h2 { margin:24px 0 12px;font-size:20px; }
+.approval-section>h2:first-child { margin-top:0; }
+.empty.compact { padding:28px;border:0; }
+.outbound-detail { display:grid;grid-template-columns:1fr 1.6fr;gap:18px;padding:16px;border-bottom:1px solid var(--line); }
+.outbound-detail>div:first-child b,.outbound-detail>div:first-child span,.fifo-list span { display:block; }
+.outbound-detail>div:first-child span { color:var(--muted);margin-top:5px; }
+.fifo-list { display:flex;flex-direction:column;gap:6px; }
+.fifo-list span { background:#edf4ff;color:#315b9e;border-radius:7px;padding:7px 10px; }
+.danger-button { border:1px solid #efb6b0;background:#fff0ef;color:#b9433b;border-radius:8px;padding:8px 12px;font-weight:700; }
+@media (max-width:760px) { .outbound-line { grid-template-columns:1fr; }.outbound-detail { grid-template-columns:1fr; }.top-actions .secondary { display:none; } }
+@media print { body { background:white; }.sidebar,.topbar,.modal-backdrop::before,.no-print { display:none!important; }.modal-backdrop { position:static;background:white;padding:0;display:block; }.print-sheet { width:100%;max-height:none;box-shadow:none;border-radius:0;overflow:visible; }.print-sheet header { display:flex!important; }.detail-summary { grid-template-columns:repeat(4,1fr); }.audit-section { page-break-inside:avoid; } }
