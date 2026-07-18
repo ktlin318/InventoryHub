@@ -158,3 +158,19 @@ body :where(p,span,small,button,input,select,textarea,label,th,td,dt,dd,em,b,str
 .danger-button { border:1px solid #efb6b0;background:#fff0ef;color:#b9433b;border-radius:8px;padding:8px 12px;font-weight:700; }
 @media (max-width:760px) { .outbound-line { grid-template-columns:1fr; }.outbound-detail { grid-template-columns:1fr; }.top-actions .secondary { display:none; } }
 @media print { body { background:white; }.sidebar,.topbar,.modal-backdrop::before,.no-print { display:none!important; }.modal-backdrop { position:static;background:white;padding:0;display:block; }.print-sheet { width:100%;max-height:none;box-shadow:none;border-radius:0;overflow:visible; }.print-sheet header { display:flex!important; }.detail-summary { grid-template-columns:repeat(4,1fr); }.audit-section { page-break-inside:avoid; } }
+
+/* 直接交付量、人工建立提示與 CSV 匯出 */
+.manual-create-banner { margin:20px 24px 0;padding:15px 17px;border:1px solid #cbdcf5;background:#f3f7ff;border-radius:11px; }
+.manual-create-banner .switch-row { margin:0;color:#315b9e; }
+.manual-create-banner .switch-row>span { display:flex;flex-direction:column;gap:4px; }
+.manual-create-banner small { color:#687b96; }
+.line-row.with-delivery { grid-template-columns:1.5fr 1.2fr .85fr .85fr .85fr; }
+.detail-line.five-columns { grid-template-columns:1.5fr repeat(4,1fr); }
+.required-reason { color:#b14840!important; }
+.required-reason input { border-color:#e4a9a4; }
+.export-bar { display:flex;align-items:flex-end;justify-content:space-between;gap:16px;background:white;border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:16px; }
+.export-bar>div { display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap; }
+.export-bar label { display:flex;flex-direction:column;gap:6px;color:#5c6a7c;font-weight:700; }
+.export-bar input,.export-bar select { height:40px;border:1px solid #d9e1ea;border-radius:8px;background:white;padding:0 10px;color:var(--ink);font-family:inherit; }
+@media (max-width:1100px) { .line-row.with-delivery { grid-template-columns:1fr 1fr; }.detail-line.five-columns { grid-template-columns:1fr 1fr; } }
+@media (max-width:760px) { .manual-create-banner { margin:14px 14px 0; }.export-bar { align-items:stretch;flex-direction:column; }.export-bar>div { display:grid;grid-template-columns:1fr 1fr; }.export-bar>button { width:100%; }.line-row.with-delivery { grid-template-columns:1fr; }.detail-line.five-columns { grid-template-columns:1fr; } }
