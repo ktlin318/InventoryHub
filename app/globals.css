@@ -109,3 +109,35 @@ body :where(p,span,small,button,input,select,textarea,label,th,td,dt,dd,em,b,str
 }
 .metric-grid strong { font-size:25px!important; }
 .login-card h2 { font-size:32px; }
+
+/* 待覆核件數：只在有資料時顯示，並容納兩位數以上。 */
+.sidebar nav button em {
+  min-width:32px;
+  height:auto;
+  min-height:28px;
+  padding:3px 9px;
+  border-radius:8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1.2;
+  font-size:16px!important;
+  font-variant-numeric:tabular-nums;
+}
+
+/* 人員與權限管理 */
+.user-table { overflow:hidden; }
+.user-table table { width:100%;border-collapse:collapse; }
+.user-table th,.user-table td { padding:16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle; }
+.user-table th { background:#f8fafc;color:var(--muted);white-space:nowrap; }
+.permission-list { display:flex;flex-wrap:wrap;gap:6px; }
+.permission-list span,.role-tag,.account-state { display:inline-flex;align-items:center;border-radius:7px;padding:5px 9px;white-space:nowrap; }
+.permission-list span { background:#edf4ff;color:#315b9e; }
+.role-tag { background:#f0f3f7;color:#536278; }
+.account-state.on { background:#e6f7f0;color:#13795f; }
+.account-state.off { background:#f1f2f4;color:#7a8492; }
+.switch-row { flex-direction:row!important;align-items:center;gap:10px!important; }
+.switch-row input { width:20px;height:20px; }
+.permission-preview { display:flex;flex-direction:column;gap:8px;background:#f7f9fc;border-radius:10px;padding:14px;color:#536278; }
+.permission-preview b { color:var(--ink);margin-bottom:2px; }
+@media (max-width:760px) { .user-table .table-wrap { display:block; }.user-table table { min-width:900px; } }

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 export type Status = "草稿" | "待確認" | "生效" | "部分提領" | "已結清" | "已取消";
-export type User = { id: string; name: string; employeeNo: string; role: "寄庫人員" | "覆核主管" };
+export type UserRole = "寄庫人員" | "覆核主管" | "系統管理員";
+export type Permission = "建立寄庫單" | "調整寄庫量" | "覆核寄庫單" | "管理人員權限";
+export type User = { id: string; name: string; employeeNo: string; email: string; role: UserRole; active: boolean; permissions: Permission[] };
 export type Customer = { id: string; code: string; name: string; type: "公司" | "個人"; phone: string };
 export type Product = { id: string; code: string; name: string; spec: string; unit: string };
 export type Warehouse = { id: string; code: string; name: string };
@@ -12,6 +14,7 @@ export type AuditEvent = { id: string; action: string; actorId: string; actorNam
 export type Consignment = { id: string; no: string; orderId: string; customerId: string; deadline: string; note: string; status: Status; createdBy: string; createdByName: string; createdAt: string; approvedBy?: string; approvedByName?: string; approvedAt?: string; lines: ConsignmentLine[]; audits: AuditEvent[] };
 
 export type Store = {
+  users: User[];
   customers: Customer[];
   products: Product[];
   warehouses: Warehouse[];
@@ -19,13 +22,15 @@ export type Store = {
   consignments: Consignment[];
 };
 
-export const users: User[] = [
-  { id: "u-operator", name: "王小明", employeeNo: "EMP-0018", role: "寄庫人員" },
-  { id: "u-supervisor", name: "林主管", employeeNo: "EMP-0003", role: "覆核主管" },
+export const initialUsers: User[] = [
+  { id: "u-operator", name: "王小明", employeeNo: "EMP-0018", email: "operator@inventoryhub.local", role: "寄庫人員", active: true, permissions: ["建立寄庫單"] },
+  { id: "u-supervisor", name: "林主管", employeeNo: "EMP-0003", email: "supervisor@inventoryhub.local", role: "覆核主管", active: true, permissions: ["建立寄庫單", "調整寄庫量", "覆核寄庫單"] },
+  { id: "u-admin", name: "陳管理員", employeeNo: "EMP-0001", email: "admin@inventoryhub.local", role: "系統管理員", active: true, permissions: ["建立寄庫單", "調整寄庫量", "覆核寄庫單", "管理人員權限"] },
 ];
 
 const now = "2026-07-18T16:42:00+08:00";
 const initialStore: Store = {
+  users: initialUsers,
   customers: [
     { id: "c-1", code: "CUS-0001", name: "沐光設計有限公司", type: "公司", phone: "02-2718-6620" },
     { id: "c-2", code: "CUS-0002", name: "陳美華", type: "個人", phone: "0912-660-318" },
@@ -79,7 +84,9 @@ export function useInventoryStore() {
   const [store, setStore] = useState<Store>(() => {
     if (typeof window === "undefined") return initialStore;
     const saved = window.localStorage.getItem(storageKey);
-    return saved ? JSON.parse(saved) as Store : initialStore;
+    if (!saved) return initialStore;
+    const parsed = JSON.parse(saved) as Partial<Store>;
+    return { ...initialStore, ...parsed, users: parsed.users?.length ? parsed.users : initialUsers };
   });
   useEffect(() => { window.localStorage.setItem(storageKey, JSON.stringify(store)); }, [store]);
 
@@ -92,6 +99,12 @@ export function useInventoryStore() {
     },
     addOrder(input: Omit<Order, "id">) {
       setStore((s) => ({ ...s, orders: [...s.orders, { ...input, id: makeId("o") }] }));
+    },
+    addUser(input: Omit<User, "id">) {
+      setStore((s) => ({ ...s, users: [...s.users, { ...input, id: makeId("u") }] }));
+    },
+    updateUser(id: string, changes: Partial<Omit<User, "id">>) {
+      setStore((s) => ({ ...s, users: s.users.map((item) => item.id === id ? { ...item, ...changes } : item) }));
     },
     saveConsignment(input: Omit<Consignment, "id" | "no" | "createdAt" | "audits">, submit: boolean, user: User) {
       setStore((s) => {
