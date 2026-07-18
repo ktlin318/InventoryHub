@@ -102,3 +102,10 @@ select, input, textarea { font-family:inherit; }
 
 @media (max-width:1000px) { .approval-grid { grid-template-columns:repeat(2,1fr); }.line-row { grid-template-columns:1fr 1fr; }.detail-line { grid-template-columns:1fr 1fr; } }
 @media (max-width:760px) { .local-badge { display:none; }.persona { max-width:120px; }.top-actions { gap:6px; }.page-actions { align-items:flex-start; }.page-actions>div:last-child { flex-wrap:wrap;justify-content:flex-end; }.approval-grid,.master-grid { grid-template-columns:1fr; }.modal-backdrop { padding:8px; }.modal { max-height:96vh;border-radius:13px; }.form-grid { grid-template-columns:1fr;padding:17px; }.form-grid .span-2 { grid-column:auto; }.line-editor { margin:0 14px 14px; }.line-row { grid-template-columns:1fr; }.detail-summary { grid-template-columns:1fr 1fr;padding:14px; }.detail-line { grid-template-columns:1fr 1fr; }.modal-actions { padding:13px 14px; }.mode-hint { align-items:flex-start;flex-direction:column;gap:5px; } }
+
+/* 全站可讀性基準：任何一般介面文字不得小於 16px。 */
+body :where(p,span,small,button,input,select,textarea,label,th,td,dt,dd,em,b,strong) {
+  font-size:16px!important;
+}
+.metric-grid strong { font-size:25px!important; }
+.login-card h2 { font-size:32px; }
