@@ -1,147 +1,62 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { hasSupabaseConfig, supabase } from "./supabase";
+import { useMemo, useState } from "react";
+import { averagePrice, Consignment, ConsignmentLine, formatTime, Product, useInventoryStore, users, User } from "./store";
 
-type View = "dashboard" | "consignments" | "customers" | "approvals" | "settings";
+type View = "dashboard" | "consignments" | "balances" | "masters" | "approvals";
+type Modal = "consignment" | "customer" | "product" | "order" | null;
 
-const navItems: { id: View; label: string; icon: string }[] = [
+const nav: { id: View; label: string; icon: string }[] = [
   { id: "dashboard", label: "營運總覽", icon: "▦" },
-  { id: "consignments", label: "寄庫管理", icon: "▤" },
-  { id: "customers", label: "客戶寄庫查詢", icon: "◎" },
+  { id: "consignments", label: "寄庫單管理", icon: "▤" },
+  { id: "balances", label: "客戶寄庫餘量", icon: "◎" },
   { id: "approvals", label: "待辦與覆核", icon: "✓" },
-  { id: "settings", label: "系統設定", icon: "⚙" },
+  { id: "masters", label: "基礎資料", icon: "⚙" },
 ];
 
-const orders = [
-  { no: "CS-20260718-001", customer: "沐光設計有限公司", order: "SO-202607-1048", products: "壓克力展示架等 3 項", qty: 186, status: "待確認", tone: "warning", owner: "王小明", time: "今天 14:32" },
-  { no: "CS-20260718-002", customer: "陳美華", order: "SO-202607-1052", products: "不鏽鋼保溫瓶", qty: 48, status: "生效", tone: "success", owner: "林怡君", time: "今天 13:08" },
-  { no: "CS-20260717-009", customer: "日禾餐飲股份有限公司", order: "SO-202607-0981", products: "客製托盤等 2 項", qty: 320, status: "部分提領", tone: "info", owner: "張庭瑋", time: "昨天 17:46" },
-  { no: "CS-20260716-006", customer: "安川貿易有限公司", order: "MANUAL-20260716-003", products: "展示掛鉤", qty: 72, status: "待確認", tone: "warning", owner: "王小明", time: "7 月 16 日" },
-];
-
-function Login({ onPreview }: { onPreview: () => void }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  async function signIn(event: FormEvent) {
-    event.preventDefault();
-    if (!hasSupabaseConfig || !supabase) {
-      setMessage("尚未連接 Supabase，請使用開發預覽進入第一階段畫面。");
-      return;
-    }
-    setLoading(true);
-    setMessage("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) setMessage("登入失敗，請確認帳號或密碼。");
-    else onPreview();
-  }
-
-  return (
-    <main className="login-page">
-      <section className="login-brand">
-        <div className="brand-mark large">IH</div>
-        <p className="eyebrow">INVENTORYHUB</p>
-        <h1>每一件寄庫，<br />都有清楚的去向。</h1>
-        <p className="brand-copy">從訂單、寄庫、提領到退貨，以完整異動軌跡掌握每位客戶的寄庫餘量。</p>
-        <div className="brand-stats">
-          <div><strong>完整追溯</strong><span>建立、覆核與異動人員</span></div>
-          <div><strong>FIFO</strong><span>自動分攤提領批次</span></div>
-          <div><strong>即時勾稽</strong><span>訂單與寄庫數量平衡</span></div>
-        </div>
-      </section>
-      <section className="login-panel">
-        <form className="login-card" onSubmit={signIn}>
-          <div className="mobile-logo"><div className="brand-mark">IH</div><b>InventoryHub</b></div>
-          <p className="eyebrow dark">內部管理系統</p>
-          <h2>歡迎回來</h2>
-          <p className="muted">請使用公司帳號登入寄庫管理系統</p>
-          <label>電子郵件<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" required /></label>
-          <label>密碼<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="請輸入密碼" required /></label>
-          {message && <p className="form-message">{message}</p>}
-          <button className="primary full" type="submit" disabled={loading}>{loading ? "登入中…" : "登入系統"}</button>
-          {!hasSupabaseConfig && <button className="preview-button" type="button" onClick={onPreview}>進入開發預覽</button>}
-          <p className="security-note"><span>●</span> 僅限授權的公司內部人員使用</p>
-        </form>
-      </section>
-    </main>
-  );
+function Login({ enter }: { enter: () => void }) {
+  return <main className="login-page"><section className="login-brand"><div className="brand-mark large">IH</div><p className="eyebrow">INVENTORYHUB</p><h1>每一件寄庫，<br/>都有清楚的去向。</h1><p className="brand-copy">從訂單、寄庫到分次提領，以完整異動軌跡掌握每位客戶的寄庫餘量。</p><div className="brand-stats"><div><strong>完整追溯</strong><span>建立、覆核與異動人員</span></div><div><strong>FIFO</strong><span>自動分攤提領批次</span></div><div><strong>即時勾稽</strong><span>訂單與寄庫數量平衡</span></div></div></section><section className="login-panel"><div className="login-card"><div className="mobile-logo"><div className="brand-mark">IH</div><b>InventoryHub</b></div><p className="eyebrow dark">可操作 MVP</p><h2>歡迎回來</h2><p className="muted">目前以本機資料模式提供完整寄庫單操作流程</p><label>電子郵件<input value="operator@inventoryhub.local" readOnly/></label><label>密碼<input type="password" value="inventoryhub" readOnly/></label><button className="primary full" onClick={enter}>進入寄庫管理系統</button><p className="security-note"><span>●</span> 本機模式資料只保存在這台裝置</p></div></section></main>;
 }
 
-function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [view, setView] = useState<View>("dashboard");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [search, setSearch] = useState("");
-
-  const filteredOrders = useMemo(() => orders.filter((item) => Object.values(item).join(" ").toLowerCase().includes(search.toLowerCase())), [search]);
-  const title = navItems.find((item) => item.id === view)?.label ?? "營運總覽";
-
-  return (
-    <main className="app-shell">
-      <aside className={`sidebar ${menuOpen ? "open" : ""}`}>
-        <div className="sidebar-brand"><div className="brand-mark">IH</div><div><b>InventoryHub</b><span>寄庫管理系統</span></div></div>
-        <nav>
-          <p>主要功能</p>
-          {navItems.slice(0, 4).map((item) => <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => { setView(item.id); setMenuOpen(false); }}><span>{item.icon}</span>{item.label}{item.id === "approvals" && <em>4</em>}</button>)}
-          <p>管理</p>
-          <button className={view === "settings" ? "active" : ""} onClick={() => { setView("settings"); setMenuOpen(false); }}><span>⚙</span>系統設定</button>
-        </nav>
-        <div className="user-card"><div className="avatar">王</div><div><b>王小明</b><span>系統管理員</span></div><button onClick={onLogout} aria-label="登出">↪</button></div>
-      </aside>
-
-      <section className="workspace">
-        <header className="topbar">
-          <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="開啟選單">☰</button>
-          <div><p className="breadcrumb">InventoryHub ／ {title}</p><h1>{title}</h1></div>
-          <div className="top-actions"><button className="icon-button" aria-label="通知">♢<i>3</i></button><button className="primary"><span>＋</span> 建立寄庫單</button></div>
-        </header>
-
-        <div className="content">
-          {view !== "dashboard" && <section className="placeholder-panel"><span>{navItems.find((i) => i.id === view)?.icon}</span><h2>{title}</h2><p>此模組將在後續階段依已核准規格逐步完成。目前第一階段已建立導覽、登入與權限基礎。</p><button className="secondary" onClick={() => setView("dashboard")}>返回營運總覽</button></section>}
-          {view === "dashboard" && <>
-            <section className="welcome-row"><div><h2>午安，王小明</h2><p>這是今天的寄庫營運摘要，目前有 <b>4 張單據</b> 等待處理。</p></div><span>資料更新：2026/07/18 16:42</span></section>
-            <section className="metric-grid">
-              <article><div className="metric-icon blue">▣</div><div><span>有效寄庫總量</span><strong>12,486 <small>件</small></strong><p className="up">↑ 8.2% <em>較上月</em></p></div></article>
-              <article><div className="metric-icon teal">◎</div><div><span>寄庫客戶數</span><strong>238 <small>位</small></strong><p>本月新增 12 位</p></div></article>
-              <article><div className="metric-icon amber">✓</div><div><span>待覆核單據</span><strong>4 <small>張</small></strong><p className="alert-text">最久已等待 2 天</p></div></article>
-              <article><div className="metric-icon red">!</div><div><span>異常與逾期</span><strong>7 <small>項</small></strong><p className="alert-text">2 項需優先處理</p></div></article>
-            </section>
-
-            <section className="dashboard-grid">
-              <article className="panel activity-panel">
-                <div className="panel-head"><div><h3>寄庫量趨勢</h3><p>近 7 日寄庫與提領數量</p></div><button className="filter">近 7 日⌄</button></div>
-                <div className="chart-legend"><span><i className="legend-blue" />寄庫</span><span><i className="legend-teal" />提領</span></div>
-                <div className="bar-chart">
-                  {[{d:"7/12",a:58,b:32},{d:"7/13",a:72,b:45},{d:"7/14",a:46,b:38},{d:"7/15",a:84,b:52},{d:"7/16",a:68,b:61},{d:"7/17",a:92,b:49},{d:"今天",a:76,b:57}].map((x) => <div className="bar-group" key={x.d}><div className="bars"><i style={{height:`${x.a}%`}}/><i style={{height:`${x.b}%`}}/></div><span>{x.d}</span></div>)}
-                </div>
-              </article>
-              <article className="panel alerts-panel">
-                <div className="panel-head"><div><h3>需處理事項</h3><p>依優先程度排序</p></div><button className="link-button">查看全部 →</button></div>
-                <div className="alert-list">
-                  <button><i className="danger">!</i><div><b>帳面量高於實際庫存</b><span>台北倉・商品 PRD-0182</span></div><em>立即處理</em></button>
-                  <button><i className="warning">⌛</i><div><b>寄庫即將到期</b><span>3 位客戶將於 7 天內到期</span></div><em>3 筆</em></button>
-                  <button><i className="info">≠</i><div><b>訂單數量勾稽異常</b><span>SO-202607-0996</span></div><em>查看</em></button>
-                </div>
-              </article>
-            </section>
-
-            <section className="panel table-panel">
-              <div className="panel-head responsive"><div><h3>最近寄庫單</h3><p>最新建立及異動的寄庫單據</p></div><div className="table-actions"><label className="search-box">⌕<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜尋客戶、訂單或單號" /></label><button className="filter">篩選⌄</button></div></div>
-              <div className="table-wrap"><table><thead><tr><th>寄庫單號</th><th>客戶</th><th>訂單／商品</th><th>寄庫量</th><th>狀態</th><th>建立資訊</th><th></th></tr></thead><tbody>{filteredOrders.map((row) => <tr key={row.no}><td><b className="order-link">{row.no}</b></td><td><b>{row.customer}</b></td><td><b>{row.order}</b><span>{row.products}</span></td><td><b>{row.qty.toLocaleString()} 件</b></td><td><span className={`status ${row.tone}`}>{row.status}</span></td><td><b>{row.owner}</b><span>{row.time}</span></td><td><button className="more">•••</button></td></tr>)}</tbody></table></div>
-              <div className="mobile-orders">{filteredOrders.map((row) => <article key={row.no}><div><b className="order-link">{row.no}</b><span className={`status ${row.tone}`}>{row.status}</span></div><h4>{row.customer}</h4><p>{row.order}・{row.products}</p><footer><b>{row.qty.toLocaleString()} 件</b><span>{row.owner}・{row.time}</span></footer></article>)}</div>
-            </section>
-          </>}
-        </div>
-      </section>
-      {menuOpen && <button className="overlay" onClick={() => setMenuOpen(false)} aria-label="關閉選單" />}
-    </main>
-  );
+function ConsignmentForm({ close, save, user, store }: { close: () => void; save: (item: Omit<Consignment,"id"|"no"|"createdAt"|"audits">, submit:boolean, user:User)=>void; user:User; store: ReturnType<typeof useInventoryStore>["store"] }) {
+  const [customerId,setCustomerId]=useState(store.customers[0]?.id??"");
+  const orders=store.orders.filter(o=>o.customerId===customerId);
+  const [orderId,setOrderId]=useState(orders[0]?.id??"");
+  const [deadline,setDeadline]=useState("2026-10-31");
+  const [note,setNote]=useState("");
+  const [quantities,setQuantities]=useState<Record<string,number>>({});
+  const [warehouses,setWarehouses]=useState<Record<string,string>>({});
+  const order=store.orders.find(o=>o.id===orderId);
+  const usedByOrder=(productId:string)=>store.consignments.filter(c=>c.orderId===orderId&&c.status!=="已取消").flatMap(c=>c.lines).filter(l=>l.productId===productId).reduce((n,l)=>n+l.qty,0);
+  function changeCustomer(id:string){setCustomerId(id);const next=store.orders.find(o=>o.customerId===id);setOrderId(next?.id??"");setQuantities({});}
+  function submit(send:boolean){if(!order)return;const lines:ConsignmentLine[]=order.lines.filter(l=>(quantities[l.productId]??0)>0).map(l=>({id:`cl-${Date.now()}-${l.productId}`,productId:l.productId,warehouseId:warehouses[l.productId]??store.warehouses[0].id,qty:quantities[l.productId],remainingQty:quantities[l.productId],averagePrice:averagePrice(l)}));if(!lines.length){alert("請至少輸入一項寄庫數量");return;}save({orderId,customerId,deadline,note,status:send?"待確認":"草稿",createdBy:user.id,createdByName:user.name,lines},send,user);close();}
+  return <div className="modal-backdrop"><section className="modal wide"><header><div><p>建立寄庫單</p><h2>選擇訂單與寄庫商品</h2></div><button onClick={close}>×</button></header><div className="form-grid"><label>客戶<select value={customerId} onChange={e=>changeCustomer(e.target.value)}>{store.customers.map(c=><option key={c.id} value={c.id}>{c.code}｜{c.name}</option>)}</select></label><label>訂單<select value={orderId} onChange={e=>{setOrderId(e.target.value);setQuantities({});}}>{orders.map(o=><option key={o.id} value={o.id}>{o.no}｜{o.date}</option>)}</select></label><label>寄庫期限<input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)}/></label><label className="span-2">備註<input value={note} onChange={e=>setNote(e.target.value)} placeholder="例如：客戶預計分兩次提領"/></label></div><div className="line-editor"><div className="line-head"><b>寄庫商品明細</b><span>不可超過訂單可寄庫量</span></div>{order?.lines.map(line=>{const product=store.products.find(p=>p.id===line.productId)!;const available=line.orderedQty-line.deliveredQty-usedByOrder(line.productId);return <div className="line-row" key={line.id}><div><b>{product.code}｜{product.name}</b><span>{product.spec}・平均成交單價 NT$ {averagePrice(line).toLocaleString()}</span></div><div className="qty-context"><span>訂購 {line.orderedQty}</span><span>已交付 {line.deliveredQty}</span><strong>可寄庫 {available}</strong></div><label>本次寄庫<input type="number" min="0" max={available} value={quantities[line.productId]??""} onChange={e=>setQuantities({...quantities,[line.productId]:Math.min(available,Math.max(0,Number(e.target.value)))})}/></label><label>倉庫<select value={warehouses[line.productId]??store.warehouses[0].id} onChange={e=>setWarehouses({...warehouses,[line.productId]:e.target.value})}>{store.warehouses.map(w=><option key={w.id} value={w.id}>{w.name}</option>)}</select></label></div>})}</div><footer className="modal-actions"><button className="secondary" onClick={close}>取消</button><button className="secondary" onClick={()=>submit(false)}>儲存草稿</button><button className="primary" onClick={()=>submit(true)}>送出覆核</button></footer></section></div>;
 }
 
-export default function Home() {
-  const [authenticated, setAuthenticated] = useState(false);
-  return authenticated ? <Dashboard onLogout={() => setAuthenticated(false)} /> : <Login onPreview={() => setAuthenticated(true)} />;
+function CustomerForm({close,add}:{close:()=>void;add:(x:{name:string;type:"公司"|"個人";phone:string})=>void}){const [name,setName]=useState("");const [type,setType]=useState<"公司"|"個人">("公司");const [phone,setPhone]=useState("");return <SimpleModal title="新增客戶" close={close} submit={()=>{if(name){add({name,type,phone});close();}}}><label>客戶名稱<input value={name} onChange={e=>setName(e.target.value)} autoFocus/></label><label>類型<select value={type} onChange={e=>setType(e.target.value as "公司"|"個人")}><option>公司</option><option>個人</option></select></label><label>聯絡電話<input value={phone} onChange={e=>setPhone(e.target.value)}/></label></SimpleModal>}
+function ProductForm({close,add}:{close:()=>void;add:(x:Omit<Product,"id"|"code">)=>void}){const [name,setName]=useState("");const [spec,setSpec]=useState("");return <SimpleModal title="新增商品" close={close} submit={()=>{if(name){add({name,spec,unit:"件"});close();}}}><label>商品名稱<input value={name} onChange={e=>setName(e.target.value)} autoFocus/></label><label>規格<input value={spec} onChange={e=>setSpec(e.target.value)}/></label><label>單位<input value="件" readOnly/></label></SimpleModal>}
+function OrderForm({close,store,add}:{close:()=>void;store:ReturnType<typeof useInventoryStore>["store"];add:(x:any)=>void}){const [no,setNo]=useState(`SO-202607-${1060+store.orders.length}`);const [customerId,setCustomerId]=useState(store.customers[0].id);const [productId,setProductId]=useState(store.products[0].id);const [orderedQty,setOrderedQty]=useState(100);const [deliveredQty,setDeliveredQty]=useState(0);const [unitPrice,setUnitPrice]=useState(100);const [discount,setDiscount]=useState(0);return <SimpleModal title="新增訂單" close={close} submit={()=>{add({no,customerId,date:"2026-07-18",source:"正式訂單",lines:[{id:`ol-${Date.now()}`,productId,orderedQty,deliveredQty,unitPrice,discount}]});close();}}><label>訂單編號<input value={no} onChange={e=>setNo(e.target.value)}/></label><label>客戶<select value={customerId} onChange={e=>setCustomerId(e.target.value)}>{store.customers.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></label><label>商品<select value={productId} onChange={e=>setProductId(e.target.value)}>{store.products.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label><div className="form-grid"><label>訂購量<input type="number" value={orderedQty} onChange={e=>setOrderedQty(Number(e.target.value))}/></label><label>已交付量<input type="number" value={deliveredQty} onChange={e=>setDeliveredQty(Number(e.target.value))}/></label><label>單價<input type="number" value={unitPrice} onChange={e=>setUnitPrice(Number(e.target.value))}/></label><label>折扣總額<input type="number" value={discount} onChange={e=>setDiscount(Number(e.target.value))}/></label></div></SimpleModal>}
+function SimpleModal({title,close,submit,children}:{title:string;close:()=>void;submit:()=>void;children:React.ReactNode}){return <div className="modal-backdrop"><section className="modal small"><header><h2>{title}</h2><button onClick={close}>×</button></header><div className="stack-form">{children}</div><footer className="modal-actions"><button className="secondary" onClick={close}>取消</button><button className="primary" onClick={submit}>儲存</button></footer></section></div>}
+
+function App() {
+  const {store,actions}=useInventoryStore();const [view,setView]=useState<View>("dashboard");const [modal,setModal]=useState<Modal>(null);const [userId,setUserId]=useState(users[0].id);const [selected,setSelected]=useState<Consignment|null>(null);const [menuOpen,setMenuOpen]=useState(false);const user=users.find(u=>u.id===userId)!;
+  const pending=store.consignments.filter(c=>c.status==="待確認");const active=store.consignments.filter(c=>["生效","部分提領"].includes(c.status));const total=active.flatMap(c=>c.lines).reduce((n,l)=>n+l.remainingQty,0);
+  const balances=useMemo(()=>active.flatMap(c=>c.lines.map(l=>({consignment:c,line:l}))),[active]);
+  const statusTone=(s:string)=>s==="生效"?"success":s==="待確認"?"warning":s==="草稿"?"neutral":"info";
+  const detail=(item:Consignment)=>{setSelected(item)};
+  const go=(next:View)=>{setView(next);setMenuOpen(false)};
+  return <main className="app-shell"><aside className={`sidebar ${menuOpen?"open":""}`}><div className="sidebar-brand"><div className="brand-mark">IH</div><div><b>InventoryHub</b><span>寄庫管理系統</span></div></div><nav><p>主要功能</p><button type="button" className={view==="dashboard"?"active":""} onClick={()=>go("dashboard")}><span>▦</span>營運總覽</button><button type="button" className={view==="consignments"?"active":""} onClick={()=>go("consignments")}><span>▤</span>寄庫單管理</button><button type="button" className={view==="balances"?"active":""} onClick={()=>go("balances")}><span>◎</span>客戶寄庫餘量</button><button type="button" className={view==="approvals"?"active":""} onClick={()=>go("approvals")}><span>✓</span>待辦與覆核<em>{pending.length}</em></button><button type="button" className={view==="masters"?"active":""} onClick={()=>go("masters")}><span>⚙</span>基礎資料</button></nav><div className="user-card"><div className="avatar">{user.name.slice(0,1)}</div><div><b>{user.name}</b><span>{user.employeeNo}・{user.role}</span></div></div></aside><section className="workspace"><header className="topbar"><button className="menu-button" onClick={()=>setMenuOpen(!menuOpen)}>☰</button><div><p className="breadcrumb">InventoryHub ／ {nav.find(n=>n.id===view)?.label}</p><h1>{nav.find(n=>n.id===view)?.label}</h1></div><div className="top-actions"><span className="local-badge">本機資料模式</span><select className="persona" value={userId} onChange={e=>setUserId(e.target.value)}>{users.map(u=><option value={u.id} key={u.id}>{u.name}｜{u.role}</option>)}</select><button className="primary" onClick={()=>setModal("consignment")}>＋ 建立寄庫單</button></div></header><div className="content">
+  {view==="dashboard"&&<><section className="welcome-row"><div><h2>午安，{user.name}</h2><p>現在可以建立寄庫單、送出覆核，並切換主管身分完成覆核。</p></div><button className="text-button" onClick={actions.reset}>重設示範資料</button></section><section className="metric-grid"><article><div className="metric-icon blue">▣</div><div><span>有效寄庫總量</span><strong>{total.toLocaleString()} <small>件</small></strong><p>依生效寄庫單即時計算</p></div></article><article><div className="metric-icon teal">◎</div><div><span>寄庫客戶數</span><strong>{new Set(active.map(c=>c.customerId)).size} <small>位</small></strong><p>目前有有效寄庫餘量</p></div></article><article><div className="metric-icon amber">✓</div><div><span>待覆核單據</span><strong>{pending.length} <small>張</small></strong><p>建立人不可覆核自己單據</p></div></article><article><div className="metric-icon red">!</div><div><span>主檔資料</span><strong>{store.orders.length} <small>張訂單</small></strong><p>{store.customers.length} 位客戶・{store.products.length} 項商品</p></div></article></section><ConsignmentTable items={store.consignments} store={store} detail={detail} statusTone={statusTone}/></>}
+  {view==="consignments"&&<><section className="page-actions"><div><h2>全部寄庫單</h2><p>管理草稿、待確認與已生效寄庫單</p></div><button className="primary" onClick={()=>setModal("consignment")}>＋ 建立寄庫單</button></section><ConsignmentTable items={store.consignments} store={store} detail={detail} statusTone={statusTone}/></>}
+  {view==="balances"&&<section className="panel table-panel"><div className="panel-head"><div><h3>客戶寄庫餘量</h3><p>只計算生效與部分提領單據</p></div></div><div className="table-wrap"><table><thead><tr><th>客戶</th><th>商品</th><th>倉庫</th><th>來源訂單</th><th>寄庫單</th><th>剩餘量</th><th>期限</th></tr></thead><tbody>{balances.map(({consignment,line})=><tr key={line.id}><td><b>{store.customers.find(c=>c.id===consignment.customerId)?.name}</b></td><td><b>{store.products.find(p=>p.id===line.productId)?.name}</b><span>{store.products.find(p=>p.id===line.productId)?.code}</span></td><td>{store.warehouses.find(w=>w.id===line.warehouseId)?.name}</td><td>{store.orders.find(o=>o.id===consignment.orderId)?.no}</td><td><button className="order-link plain" onClick={()=>detail(consignment)}>{consignment.no}</button></td><td><b>{line.remainingQty} 件</b></td><td>{consignment.deadline}</td></tr>)}</tbody></table></div></section>}
+  {view==="approvals"&&<><section className="mode-hint"><b>覆核操作提示</b><span>請在右上角切換為「林主管｜覆核主管」。建立人不能覆核自己的單據。</span></section><section className="approval-grid">{pending.length===0?<div className="empty">目前沒有待覆核單據</div>:pending.map(item=><article className="approval-card" key={item.id}><div><span className="status warning">待確認</span><b>{item.no}</b></div><h3>{store.customers.find(c=>c.id===item.customerId)?.name}</h3><p>{store.orders.find(o=>o.id===item.orderId)?.no}・{item.lines.length} 項商品・共 {item.lines.reduce((n,l)=>n+l.qty,0)} 件</p><dl><div><dt>建立人</dt><dd>{item.createdByName}</dd></div><div><dt>建立時間</dt><dd>{formatTime(item.createdAt)}</dd></div></dl><footer><button className="secondary" onClick={()=>actions.returnForEdit(item.id,user)} disabled={item.createdBy===user.id}>退回修改</button><button className="primary" onClick={()=>actions.approve(item.id,user)} disabled={item.createdBy===user.id||user.role!=="覆核主管"}>覆核生效</button></footer>{item.createdBy===user.id&&<small>建立人不可覆核自己的單據</small>}</article>)}</section></>}
+  {view==="masters"&&<><section className="page-actions"><div><h2>基礎資料</h2><p>建立寄庫單前所需的客戶、商品、訂單與倉庫清單</p></div><div><button className="secondary" onClick={()=>setModal("customer")}>＋ 客戶</button><button className="secondary" onClick={()=>setModal("product")}>＋ 商品</button><button className="primary" onClick={()=>setModal("order")}>＋ 訂單</button></div></section><div className="master-grid"><MasterList title="客戶" rows={store.customers.map(c=>[c.code,c.name,`${c.type}・${c.phone}`])}/><MasterList title="商品" rows={store.products.map(p=>[p.code,p.name,`${p.spec}・${p.unit}`])}/><MasterList title="訂單" rows={store.orders.map(o=>[o.no,store.customers.find(c=>c.id===o.customerId)?.name??"",`${o.lines.length} 項商品・${o.source}`])}/><MasterList title="倉庫" rows={store.warehouses.map(w=>[w.code,w.name,"啟用中"])}/></div></>}
+ </div></section>{menuOpen&&<button className="overlay" onClick={()=>setMenuOpen(false)}/>} {modal==="consignment"&&<ConsignmentForm close={()=>setModal(null)} save={actions.saveConsignment} user={user} store={store}/>} {modal==="customer"&&<CustomerForm close={()=>setModal(null)} add={actions.addCustomer}/>} {modal==="product"&&<ProductForm close={()=>setModal(null)} add={actions.addProduct}/>} {modal==="order"&&<OrderForm close={()=>setModal(null)} add={actions.addOrder} store={store}/>} {selected&&<Detail item={selected} store={store} close={()=>setSelected(null)}/>}</main>;
 }
+
+function ConsignmentTable({items,store,detail,statusTone}:{items:Consignment[];store:ReturnType<typeof useInventoryStore>["store"];detail:(i:Consignment)=>void;statusTone:(s:string)=>string}){return <section className="panel table-panel"><div className="panel-head"><div><h3>寄庫單清單</h3><p>點選單號查看商品與完整異動軌跡</p></div></div><div className="table-wrap"><table><thead><tr><th>寄庫單號</th><th>客戶</th><th>來源訂單</th><th>商品／數量</th><th>狀態</th><th>建立資訊</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td><button className="order-link plain" onClick={()=>detail(item)}>{item.no}</button></td><td><b>{store.customers.find(c=>c.id===item.customerId)?.name}</b></td><td>{store.orders.find(o=>o.id===item.orderId)?.no}</td><td><b>{item.lines.length} 項・{item.lines.reduce((n,l)=>n+l.qty,0)} 件</b></td><td><span className={`status ${statusTone(item.status)}`}>{item.status}</span></td><td><b>{item.createdByName}</b><span>{formatTime(item.createdAt)}</span></td></tr>)}</tbody></table></div></section>}
+function MasterList({title,rows}:{title:string;rows:string[][]}){return <section className="panel master-card"><header><h3>{title}</h3><span>{rows.length} 筆</span></header>{rows.map((r,i)=><div className="master-row" key={i}><b>{r[0]}</b><div><strong>{r[1]}</strong><span>{r[2]}</span></div></div>)}</section>}
+function Detail({item,store,close}:{item:Consignment;store:ReturnType<typeof useInventoryStore>["store"];close:()=>void}){return <div className="modal-backdrop"><section className="modal wide detail-modal"><header><div><p>{item.no}</p><h2>{store.customers.find(c=>c.id===item.customerId)?.name}</h2></div><button onClick={close}>×</button></header><div className="detail-summary"><div><span>來源訂單</span><b>{store.orders.find(o=>o.id===item.orderId)?.no}</b></div><div><span>狀態</span><b>{item.status}</b></div><div><span>寄庫期限</span><b>{item.deadline}</b></div><div><span>建立人</span><b>{item.createdByName}</b></div></div><div className="line-editor"><div className="line-head"><b>寄庫商品</b></div>{item.lines.map(line=><div className="detail-line" key={line.id}><div><b>{store.products.find(p=>p.id===line.productId)?.name}</b><span>{store.products.find(p=>p.id===line.productId)?.code}・{store.warehouses.find(w=>w.id===line.warehouseId)?.name}</span></div><div><span>寄庫量</span><b>{line.qty} 件</b></div><div><span>剩餘量</span><b>{line.remainingQty} 件</b></div><div><span>平均成交單價</span><b>NT$ {line.averagePrice.toLocaleString()}</b></div></div>)}</div><section className="audit-section"><h3>異動時間軸</h3>{[...item.audits].reverse().map(a=><div className="audit-row" key={a.id}><i/><div><b>{a.action}</b><p>{a.note}</p><span>{a.actorName}・{formatTime(a.at)}</span></div></div>)}</section></section></div>}
+
+export default function Home(){const [entered,setEntered]=useState(false);return entered?<App/>:<Login enter={()=>setEntered(true)}/>}
